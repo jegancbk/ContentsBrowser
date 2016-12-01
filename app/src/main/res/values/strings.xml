@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Music Browser</string>
+
+    <string name="entity_text">Select an entity</string>
+    <string name="action_choose_entity">choose an entity</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="loading">Loading Contents</string>
+</resources>

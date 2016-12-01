@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="spinner_list_item_array">
+        <item>All</item>
+        <item>Movie</item>
+        <item>Podcast</item>
+        <item>Music</item>
+        <item>Music video</item>
+        <item>Audio book</item>
+        <item>Short Film</item>
+        <item>TV show</item>
+        <item>Software</item>
+        <item>Ebook</item>
+    </string-array>
+
+    <string-array name="entity_value_array">
+        <item>all</item>
+        <item>movie</item>
+        <item>podcast</item>
+        <item>music</item>
+        <item>musicVideo</item>
+        <item>audioBook</item>
+        <item>shortFilm</item>
+        <item>tvShow</item>
+        <item>software</item>
+        <item>ebook</item>
+    </string-array>
+</resources>
