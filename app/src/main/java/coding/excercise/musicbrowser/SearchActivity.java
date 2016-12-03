@@ -25,15 +25,18 @@ import coding.excercise.musicbrowser.utils.ContentSearchUtils;
 
 public class SearchActivity extends AppCompatActivity implements
         ContentListFragment.ContentListInteractionListener,
-        ContentDetailsFragment.ContentDetailsInteractionListener {
+        ContentDetailsFragment.ContentDetailsInteractionListener, FragmentManager.OnBackStackChangedListener {
 
     private SearchView.OnQueryTextListener searchListner;
     private ContentListFragment contentListFragment;
     private ContentDetailsFragment contentDetailsFragment;
     private SearchView searchView;
     private MenuItem searchMenuItem;
-    private String searchQuery;
+    private String searchQuery = "";
     private String SEARCH_KEY = "search_query";
+    private static final String SPINNER_POS = "spinner_pos";
+    private Spinner spinner;
+    private int spinnerPosition = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,8 +46,11 @@ public class SearchActivity extends AppCompatActivity implements
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
 
+        getSupportFragmentManager().addOnBackStackChangedListener(this);
+        shouldDisplayHomeUp();
         if (savedInstanceState != null) {
             searchQuery = savedInstanceState.getString(SEARCH_KEY);
+            spinnerPosition = savedInstanceState.getInt(SPINNER_POS);
         }
     }
 
@@ -53,7 +59,7 @@ public class SearchActivity extends AppCompatActivity implements
         inflater.inflate(R.menu.music_search_menu, menu);
 
         MenuItem item = menu.findItem(R.id.action_choose_entity);
-        final Spinner spinner = (Spinner) MenuItemCompat.getActionView(item);
+        spinner = (Spinner) MenuItemCompat.getActionView(item);
 
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.spinner_list_item_array, R.layout.entity_spinner);
@@ -61,6 +67,7 @@ public class SearchActivity extends AppCompatActivity implements
 
         spinner.setAdapter(adapter);
 
+        spinner.setSelection(spinnerPosition, true);
         searchMenuItem = menu.findItem(R.id.action_search);
         searchView = (SearchView) searchMenuItem.getActionView();
         if (searchQuery != null && !searchQuery.isEmpty()) {
@@ -133,6 +140,7 @@ public class SearchActivity extends AppCompatActivity implements
             searchQuery = searchView.getQuery().toString();
             outState.putString(SEARCH_KEY, searchQuery);
         }
+        outState.putInt(SPINNER_POS, spinner.getSelectedItemPosition());
         super.onSaveInstanceState(outState);
     }
 
@@ -167,5 +175,22 @@ public class SearchActivity extends AppCompatActivity implements
     @Override
     public void onFragmentInteraction(Uri uri) {
 
+    }
+
+    @Override
+    public void onBackStackChanged() {
+        shouldDisplayHomeUp();
+    }
+
+    public void shouldDisplayHomeUp(){
+        //Enable Up button only  if there are entries in the back stack
+        boolean canGoBack = getSupportFragmentManager().getBackStackEntryCount()>0;
+        getSupportActionBar().setDisplayHomeAsUpEnabled(canGoBack);
+    }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        getSupportFragmentManager().popBackStack();
+        return true;
     }
 }

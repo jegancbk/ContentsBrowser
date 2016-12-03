@@ -85,6 +85,7 @@ public class ContentListFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_content_list, container, false);
         progressBarLayout = (LinearLayout) view.findViewById(R.id.progress_bar);
         progressBarLayout.setVisibility(View.VISIBLE);
+        progressBarLayout.bringToFront();
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.contents_recycler_view);
         if (getActivity().getResources().getConfiguration().orientation
