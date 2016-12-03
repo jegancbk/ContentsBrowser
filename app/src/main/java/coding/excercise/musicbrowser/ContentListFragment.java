@@ -1,10 +1,10 @@
 package coding.excercise.musicbrowser;
 
 import android.content.Context;
-import android.net.Uri;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,7 +16,6 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
@@ -27,24 +26,16 @@ import java.util.List;
 
 import coding.excercise.musicbrowser.adapters.ContentsRecyclerViewAdapter;
 import coding.excercise.musicbrowser.models.Content;
-import coding.excercise.musicbrowser.models.ContentResponse;
 import coding.excercise.musicbrowser.utils.ContentBrowserConstants;
+import coding.excercise.musicbrowser.utils.ContentSearchUtils;
 import coding.excercise.musicbrowser.utils.VolleySingleton;
-
-import static android.content.ContentValues.TAG;
 
 
 /**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link ContentListInteractionListener} interface
- * to handle interaction events.
- * Use the {@link ContentListFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Content List fragment
  */
 public class ContentListFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+
     private static final String ARG_QUERY = "query";
     private static final String ARG_ENTITY = "entity";
     private final String TAG = this.getClass().getSimpleName();
@@ -54,19 +45,18 @@ public class ContentListFragment extends Fragment {
     private List<Content> contentsList = new ArrayList<>();
 
     private LinearLayout progressBarLayout;
-    private ContentListInteractionListener mListener;
+    private ContentListInteractionListener mActivityInteractor;
     private RecyclerView mRecyclerView;
     private ContentsRecyclerViewAdapter contentsAdapter;
+
     public ContentListFragment() {
-        // Required empty public constructor
     }
 
     /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
+     * factory method to create new instance method of Content list fragment
      *
-     * @param query Parameter 1.
-     * @param entity Parameter 2.
+     * @param query  search query string
+     * @param entity selected entity
      * @return A new instance of fragment ContentListFragment.
      */
     public static ContentListFragment newInstance(String query, String entity) {
@@ -85,18 +75,25 @@ public class ContentListFragment extends Fragment {
             query = getArguments().getString(ARG_QUERY);
             entity = getArguments().getString(ARG_ENTITY);
         }
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+
         View view = inflater.inflate(R.layout.fragment_content_list, container, false);
         progressBarLayout = (LinearLayout) view.findViewById(R.id.progress_bar);
         progressBarLayout.setVisibility(View.VISIBLE);
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.contents_recycler_view);
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        if (getActivity().getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_PORTRAIT) {
+            mRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3));
+        } else {
+            mRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 4));
+        }
+
         fetchContentData();
 
         return view;
@@ -106,7 +103,7 @@ public class ContentListFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context instanceof ContentListInteractionListener) {
-            mListener = (ContentListInteractionListener) context;
+            mActivityInteractor = (ContentListInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement ContentListInteractionListener");
@@ -116,30 +113,20 @@ public class ContentListFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
+        mActivityInteractor = null;
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
     public interface ContentListInteractionListener {
-        void fetchContentList(Uri uri);
+        void loadContentDetailsFragment(Content contentItem);
     }
 
-    public void fetchContentData(){
+    public void fetchContentData() {
 
         try {
             query = URLEncoder.encode(query, "UTF-8");
             entity = URLEncoder.encode(entity, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            Log.e(TAG,e.getMessage());
+            Log.e(TAG, e.getMessage());
         }
 
         String apiUrl = ContentBrowserConstants.ITUNES_API_URL.replace("[SEARCH_TERM]", query)
@@ -154,12 +141,7 @@ public class ContentListFragment extends Fragment {
 
                         progressBarLayout.setVisibility(View.GONE);
 
-                        Gson gson = new Gson();
-                        ContentResponse contentResponse = gson.fromJson(contentJsonResponse, ContentResponse.class);
-                        contentsList = contentResponse.results;
-
-                        contentsAdapter = new ContentsRecyclerViewAdapter(getContext(), contentsList);
-                        mRecyclerView.setAdapter(contentsAdapter);
+                        buildRecyclerView(contentJsonResponse);
 
                     }
                 }, new Response.ErrorListener() {
@@ -173,5 +155,27 @@ public class ContentListFragment extends Fragment {
                 });
 
         VolleySingleton.getInstance(getContext()).addToRequestQueue(jsObjRequest);
+    }
+
+    private void buildRecyclerView(String contentJsonResponse) {
+
+        contentsList = ContentSearchUtils.processJsonResponse(contentJsonResponse);
+        if (contentsList == null) {
+            return;
+        }
+        contentsAdapter = new ContentsRecyclerViewAdapter(getContext(), contentsList);
+        contentsAdapter.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(Content contentItem) {
+                if (mActivityInteractor != null) {
+                    mActivityInteractor.loadContentDetailsFragment(contentItem);
+                }
+            }
+        });
+        mRecyclerView.setAdapter(contentsAdapter);
+    }
+
+    public interface OnItemClickListener {
+        void onItemClick(Content contentItem);
     }
 }

@@ -5,27 +5,36 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.android.volley.toolbox.ImageLoader;
-import com.android.volley.toolbox.NetworkImageView;
+import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
+import coding.excercise.musicbrowser.ContentListFragment;
 import coding.excercise.musicbrowser.R;
 import coding.excercise.musicbrowser.models.Content;
-import coding.excercise.musicbrowser.utils.VolleySingleton;
 
 /**
  * Created by jegan_2 on 12/1/2016.
  */
 
-public class ContentsRecyclerViewAdapter extends RecyclerView.Adapter<ContentsRecyclerViewAdapter.ContentViewHolder> {
+public class ContentsRecyclerViewAdapter extends
+        RecyclerView.Adapter<ContentsRecyclerViewAdapter.ContentViewHolder> {
 
     private Context mContext;
     private List<Content> mContentList;
-    private ImageLoader mImageLoader;
 
+    private ContentListFragment.OnItemClickListener onItemClickListener;
+
+    public ContentListFragment.OnItemClickListener getOnItemClickListener() {
+        return onItemClickListener;
+    }
+
+    public void setOnItemClickListener(ContentListFragment.OnItemClickListener onItemClickListener) {
+        this.onItemClickListener = onItemClickListener;
+    }
 
     public ContentsRecyclerViewAdapter(Context mContext, List<Content> contentList) {
         this.mContext = mContext;
@@ -41,15 +50,30 @@ public class ContentsRecyclerViewAdapter extends RecyclerView.Adapter<ContentsRe
 
     @Override
     public void onBindViewHolder(ContentViewHolder holder, int position) {
-        Content content = mContentList.get(position);
+        final Content content = mContentList.get(position);
         holder.title.setText(content.getTrackName());
         float price = content.getTrackPrice();
-        holder.price.setText("$" + price);
+        holder.price.setText(String.format(mContext.getResources().getString(R.string.price_text),
+                price));
 
-        if(content.getArtworkUrl100() != null) {
-            mImageLoader = VolleySingleton.getInstance(mContext).getImageLoader();
-            holder.imageView.setImageUrl(content.getArtworkUrl100(), mImageLoader);
+        if (content.getArtworkUrl100() != null) {
+            Picasso.with(mContext).load(content.getArtworkUrl100())
+                    .error(R.drawable.ic_image_not_available)
+                    .placeholder(R.drawable.ic_image_not_available)
+                    .fit()
+                    .into(holder.imageView);
         }
+
+        View.OnClickListener listener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onItemClickListener.onItemClick(content);
+            }
+        };
+
+        holder.imageView.setOnClickListener(listener);
+        holder.title.setOnClickListener(listener);
+        holder.price.setOnClickListener(listener);
     }
 
     @Override
@@ -58,12 +82,13 @@ public class ContentsRecyclerViewAdapter extends RecyclerView.Adapter<ContentsRe
     }
 
     class ContentViewHolder extends RecyclerView.ViewHolder {
-        protected NetworkImageView imageView;
+        protected ImageView imageView;
         protected TextView title;
         protected TextView price;
+
         public ContentViewHolder(View itemView) {
             super(itemView);
-            this.imageView = (NetworkImageView) itemView.findViewById(R.id.thumbnail);
+            this.imageView = (ImageView) itemView.findViewById(R.id.thumbnail);
             this.title = (TextView) itemView.findViewById(R.id.title);
             this.price = (TextView) itemView.findViewById(R.id.price);
 

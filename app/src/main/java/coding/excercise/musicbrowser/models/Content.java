@@ -7,7 +7,7 @@ import android.os.Parcelable;
  * Created by jegan_2 on 12/1/2016.
  */
 
-public class Content implements Parcelable{
+public class Content implements Parcelable {
 
     private String trackName;
     private String trackCensoredName;
@@ -103,43 +103,4 @@ public class Content implements Parcelable{
         parcel.writeString(collectionCensoredName);
         parcel.writeFloat(trackPrice);
     }
-
-/*    public static Content fromJson(JSONObject jsonObject) {
-        Content content = new Content();
-        try {
-            content.trackName = jsonObject.getString("trackName");
-            content.artworkUrl100 = jsonObject.getString("artworkUrl100");
-            content.collectionName = jsonObject.getString("collectionName");
-            content.collectionCensoredName = jsonObject.getString("collectionCensoredName");
-            content.trackCensoredName = jsonObject.getString("trackCensoredName");
-            content.trackPrice = jsonObject.getInt("trackPrice");
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return content;
-    }
-
-    public static ArrayList<Content> fromJson(JSONArray contentJsonArray) {
-            JSONObject contentJson = null;
-            ArrayList<Content> contents = new ArrayList<Content>(contentJsonArray.length());
-
-            for (int i = 0; i < contentJsonArray.length(); i++) {
-                try {
-                    contentJson = contentJsonArray.getJSONObject(i);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-                Content event = Content.fromJson(contentJson);
-
-                if(event != null) {
-                    contents.add(event);
-                }
-            }
-
-            return contents;
-
-
-    }*/
 }

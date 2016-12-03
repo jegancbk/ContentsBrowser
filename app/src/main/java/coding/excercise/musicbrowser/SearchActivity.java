@@ -1,13 +1,14 @@
 package coding.excercise.musicbrowser;
 
-import android.app.SearchManager;
-import android.content.Context;
+import android.content.DialogInterface;
 import android.net.Uri;
+import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -16,14 +17,23 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
-import android.widget.Toast;
+import android.widget.TextView;
 
-public class SearchActivity extends AppCompatActivity implements ContentListFragment.ContentListInteractionListener {
+import coding.excercise.musicbrowser.models.Content;
+import coding.excercise.musicbrowser.utils.ContentBrowserConstants;
+import coding.excercise.musicbrowser.utils.ContentSearchUtils;
+
+public class SearchActivity extends AppCompatActivity implements
+        ContentListFragment.ContentListInteractionListener,
+        ContentDetailsFragment.ContentDetailsInteractionListener {
 
     private SearchView.OnQueryTextListener searchListner;
     private ContentListFragment contentListFragment;
+    private ContentDetailsFragment contentDetailsFragment;
     private SearchView searchView;
     private MenuItem searchMenuItem;
+    private String searchQuery;
+    private String SEARCH_KEY = "search_query";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +42,10 @@ public class SearchActivity extends AppCompatActivity implements ContentListFrag
 
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
+
+        if (savedInstanceState != null) {
+            searchQuery = savedInstanceState.getString(SEARCH_KEY);
+        }
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -47,16 +61,32 @@ public class SearchActivity extends AppCompatActivity implements ContentListFrag
 
         spinner.setAdapter(adapter);
 
-        searchMenuItem = menu.findItem( R.id.action_search);
+        searchMenuItem = menu.findItem(R.id.action_search);
         searchView = (SearchView) searchMenuItem.getActionView();
+        if (searchQuery != null && !searchQuery.isEmpty()) {
+            MenuItemCompat.expandActionView(searchMenuItem);
+            searchView.setQuery(searchQuery, true);
+            searchView.clearFocus();
+        }
+
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                loadContentsListFragment(query, spinner.getSelectedItemPosition());
-                searchView.setQuery("", false);
-                searchView.setIconified(true);
+                if (ContentSearchUtils.isNetworkAvailable(getApplicationContext())) {
+                    if (ContentSearchUtils.isValidSearchQuery(query)) {
+                        loadContentsListFragment(query, spinner.getSelectedItemPosition());
+                        searchView.setQuery("", false);
+                        searchView.setIconified(true);
+                    } else {
+                        showErrorDialog(getResources().getString(R.string.error_validation));
+                        searchView.setQuery("", false);
+                    }
+                } else {
+                    showErrorDialog(getResources().getString(R.string.error_network));
+                }
                 return false;
             }
+
             @Override
             public boolean onQueryTextChange(String s) {
                 return false;
@@ -64,6 +94,20 @@ public class SearchActivity extends AppCompatActivity implements ContentListFrag
         });
 
         return super.onCreateOptionsMenu(menu);
+
+    }
+
+    private void showErrorDialog(String errorMsg) {
+
+        new AlertDialog.Builder(SearchActivity.this)
+                .setMessage(errorMsg)
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
 
     }
 
@@ -76,24 +120,52 @@ public class SearchActivity extends AppCompatActivity implements ContentListFrag
         }
     }
 
-    public void loadContentsListFragment(String query, int selectedItemPos) {
+    @Override
+    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+        searchQuery = searchView.getQuery().toString();
+        outState.putString(SEARCH_KEY, searchQuery);
+        super.onSaveInstanceState(outState, outPersistentState);
+    }
 
-        Toast.makeText(this, query, Toast.LENGTH_LONG).show();
-        Toast.makeText(this, getResources().getStringArray(R.array.entity_value_array)[selectedItemPos].toString(), Toast.LENGTH_LONG).show();
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        if (searchView != null) {
+            searchQuery = searchView.getQuery().toString();
+            outState.putString(SEARCH_KEY, searchQuery);
+        }
+        super.onSaveInstanceState(outState);
+    }
+
+    public void loadContentsListFragment(String query, int selectedItemPos) {
 
         String entity = getResources().getStringArray(R.array.entity_value_array)[selectedItemPos].toString();
 
+        TextView welcomeText = (TextView) findViewById(R.id.welcome);
+        welcomeText.setVisibility(View.GONE);
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         contentListFragment = ContentListFragment.newInstance(query, entity);
-        fragmentTransaction.replace(R.id.frame_layout, contentListFragment, "contentListFragment");
-        fragmentTransaction.addToBackStack("contentListFragment");
+        fragmentTransaction.replace(R.id.frame_layout, contentListFragment,
+                ContentBrowserConstants.CONTENT_LIST_FRAGMENT_TAG);
+        fragmentTransaction.addToBackStack(ContentBrowserConstants.CONTENT_LIST_FRAGMENT_TAG);
         fragmentTransaction.commit();
 
     }
 
     @Override
-    public void fetchContentList(Uri uri) {
+    public void loadContentDetailsFragment(Content contentItem) {
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        contentDetailsFragment = ContentDetailsFragment.newInstance(contentItem);
+        fragmentTransaction.replace(R.id.frame_layout, contentDetailsFragment,
+                ContentBrowserConstants.CONTENT_DETAILS_FRAGMENT_TAG);
+        fragmentTransaction.addToBackStack(ContentBrowserConstants.CONTENT_DETAILS_FRAGMENT_TAG);
+        fragmentTransaction.commit();
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
 
     }
 }
