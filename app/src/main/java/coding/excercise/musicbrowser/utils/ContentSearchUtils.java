@@ -37,4 +37,5 @@ public class ContentSearchUtils {
         ContentResponse contentResponse = gson.fromJson(contentJsonResponse, ContentResponse.class);
         return contentResponse.results;
     }
+
 }

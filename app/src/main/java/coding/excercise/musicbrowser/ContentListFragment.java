@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import coding.excercise.musicbrowser.adapters.ContentsRecyclerViewAdapter;
+import coding.excercise.musicbrowser.api.ContentApiInteractor;
 import coding.excercise.musicbrowser.models.Content;
 import coding.excercise.musicbrowser.utils.ContentBrowserConstants;
 import coding.excercise.musicbrowser.utils.ContentSearchUtils;
@@ -36,18 +37,19 @@ import coding.excercise.musicbrowser.utils.VolleySingleton;
  */
 public class ContentListFragment extends Fragment {
 
-    private static final String ARG_QUERY = "query";
-    private static final String ARG_ENTITY = "entity";
+    private static final String ARG_QUERY = "mQuery";
+    private static final String ARG_ENTITY = "mEntity";
     private final String TAG = this.getClass().getSimpleName();
 
-    private String query;
-    private String entity;
-    private List<Content> contentsList = new ArrayList<>();
+    private String mQuery;
+    private String mEntity;
+    private List<Content> mContentsList = new ArrayList<>();
 
     private LinearLayout progressBarLayout;
     private ContentListInteractionListener mActivityInteractor;
     private RecyclerView mRecyclerView;
-    private ContentsRecyclerViewAdapter contentsAdapter;
+    private ContentsRecyclerViewAdapter mContentsAdapter;
+    private ContentApiInteractor mContentApiInteractor;
 
     public ContentListFragment() {
     }
@@ -55,8 +57,8 @@ public class ContentListFragment extends Fragment {
     /**
      * factory method to create new instance method of Content list fragment
      *
-     * @param query  search query string
-     * @param entity selected entity
+     * @param query  search mQuery string
+     * @param entity selected mEntity
      * @return A new instance of fragment ContentListFragment.
      */
     public static ContentListFragment newInstance(String query, String entity) {
@@ -72,8 +74,8 @@ public class ContentListFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            query = getArguments().getString(ARG_QUERY);
-            entity = getArguments().getString(ARG_ENTITY);
+            mQuery = getArguments().getString(ARG_QUERY);
+            mEntity = getArguments().getString(ARG_ENTITY);
         }
 
     }
@@ -81,6 +83,8 @@ public class ContentListFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        mContentApiInteractor = ContentApiInteractor.getInstance();
 
         View view = inflater.inflate(R.layout.fragment_content_list, container, false);
         progressBarLayout = (LinearLayout) view.findViewById(R.id.progress_bar);
@@ -95,7 +99,26 @@ public class ContentListFragment extends Fragment {
             mRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 4));
         }
 
-        fetchContentData();
+        mContentApiInteractor.fetchContentData(getContext(), mQuery, mEntity,
+                new ContentApiInteractor.ContentApiResponseListener(){
+
+                    @Override
+                    public void onSuccessResponse(JSONObject response) {
+                        String contentJsonResponse = response.toString();
+                        Log.d("Response json", contentJsonResponse);
+
+                        progressBarLayout.setVisibility(View.GONE);
+
+                        buildRecyclerView(contentJsonResponse);
+                    }
+
+                    @Override
+                    public void onFailureResponse(VolleyError error) {
+                        Log.e("Api error response", error.getMessage());
+                        progressBarLayout.setVisibility(View.GONE);
+                    }
+                }
+        );
 
         return view;
     }
@@ -124,14 +147,14 @@ public class ContentListFragment extends Fragment {
     public void fetchContentData() {
 
         try {
-            query = URLEncoder.encode(query, "UTF-8");
-            entity = URLEncoder.encode(entity, "UTF-8");
+            mQuery = URLEncoder.encode(mQuery, "UTF-8");
+            mEntity = URLEncoder.encode(mEntity, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             Log.e(TAG, e.getMessage());
         }
 
-        String apiUrl = ContentBrowserConstants.ITUNES_API_URL.replace("[SEARCH_TERM]", query)
-                .replace("[ENTITY]", entity);
+        String apiUrl = ContentBrowserConstants.ITUNES_API_URL.replace("[SEARCH_TERM]", mQuery)
+                .replace("[ENTITY]", mEntity);
         JsonObjectRequest jsObjRequest = new JsonObjectRequest
                 (Request.Method.GET, apiUrl, null, new Response.Listener<JSONObject>() {
 
@@ -160,12 +183,12 @@ public class ContentListFragment extends Fragment {
 
     private void buildRecyclerView(String contentJsonResponse) {
 
-        contentsList = ContentSearchUtils.processJsonResponse(contentJsonResponse);
-        if (contentsList == null) {
+        mContentsList = ContentSearchUtils.processJsonResponse(contentJsonResponse);
+        if (mContentsList == null) {
             return;
         }
-        contentsAdapter = new ContentsRecyclerViewAdapter(getContext(), contentsList);
-        contentsAdapter.setOnItemClickListener(new OnItemClickListener() {
+        mContentsAdapter = new ContentsRecyclerViewAdapter(getContext(), mContentsList);
+        mContentsAdapter.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(Content contentItem) {
                 if (mActivityInteractor != null) {
@@ -173,7 +196,7 @@ public class ContentListFragment extends Fragment {
                 }
             }
         });
-        mRecyclerView.setAdapter(contentsAdapter);
+        mRecyclerView.setAdapter(mContentsAdapter);
     }
 
     public interface OnItemClickListener {

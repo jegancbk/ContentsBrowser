@@ -1,7 +1,6 @@
 package coding.excercise.musicbrowser;
 
 import android.content.DialogInterface;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.v4.app.FragmentManager;
@@ -25,7 +24,7 @@ import coding.excercise.musicbrowser.utils.ContentSearchUtils;
 
 public class SearchActivity extends AppCompatActivity implements
         ContentListFragment.ContentListInteractionListener,
-        ContentDetailsFragment.ContentDetailsInteractionListener, FragmentManager.OnBackStackChangedListener {
+        FragmentManager.OnBackStackChangedListener {
 
     private SearchView.OnQueryTextListener searchListner;
     private ContentListFragment contentListFragment;
@@ -170,11 +169,6 @@ public class SearchActivity extends AppCompatActivity implements
                 ContentBrowserConstants.CONTENT_DETAILS_FRAGMENT_TAG);
         fragmentTransaction.addToBackStack(ContentBrowserConstants.CONTENT_DETAILS_FRAGMENT_TAG);
         fragmentTransaction.commit();
-    }
-
-    @Override
-    public void onFragmentInteraction(Uri uri) {
-
     }
 
     @Override

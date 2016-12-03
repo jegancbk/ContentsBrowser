@@ -1,7 +1,5 @@
 package coding.excercise.musicbrowser;
 
-import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -23,8 +21,6 @@ public class ContentDetailsFragment extends Fragment {
     private static final String ARG_CONTENT = "content_item";
 
     private Content mContentItem;
-
-    private ContentDetailsInteractionListener mListener;
 
     public ContentDetailsFragment() {
     }
@@ -83,24 +79,4 @@ public class ContentDetailsFragment extends Fragment {
         return view;
     }
 
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof ContentDetailsInteractionListener) {
-            mListener = (ContentDetailsInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement ContentDetailsInteractionListener");
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
-
-    public interface ContentDetailsInteractionListener {
-        void onFragmentInteraction(Uri uri);
-    }
 }
